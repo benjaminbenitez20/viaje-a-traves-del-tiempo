@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proyecto de Historia Interactiva</title>
+  <style>
+    :root {
+      --primary-color: #003366;
+      --secondary-color: #0055aa;
+      --accent-color: #ffaa00;
+      --light-color: #f2f2f2;
+      --dark-color: #333;
+      --text-color: #333;
+      --text-light: #fff;
+      --shadow: 0 4px 6px rgba(0,0,0,0.1);
+      --transition: all 0.3s ease;
+    }
+    
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--light-color);
+      color: var(--text-color);
+      line-height: 1.6;
+    }
+
+    header {
+      background-color: var(--primary-color);
+      color: var(--text-light);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    nav button {
+      margin-left: 10px;
+      padding: 8px 15px;
+      border: none;
+      background-color: var(--secondary-color);
+      color: var(--text-light);
+      border-radius: 5px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    nav button:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+
+    nav button.active {
+      background-color: var(--accent-color);
+      color: var(--dark-color);
+      font-weight: bold;
+    }
+
+    .section {
+      display: none;
+      padding: 20px;
+      overflow-y: auto;
+      min-height: calc(100vh - 70px);
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    h2 {
+      color: var(--primary-color);
+      border-bottom: 2px solid var(--accent-color);
+      padding-bottom: 10px;
+      margin-top: 0;
+    }
+
+    .timeline-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    @media (min-width: 768px) {
+      .timeline-container {
+        flex-direction: row;
+      }
+    }
+
+    .timeline-bar {
+      width: 100%;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+      }
+    
+
+    .timeline-segment:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .timeline-segment::after {
+      content: attr(data-label);
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    @media (min-width: 768px) {
+      .timeline-segment::after {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+    }
+
+    .drag-indicator {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--accent-color);
+      border-radius: 2px;
+      transition: var(--transition);
+      pointer-events: none;
+    }
+
+    @media (min-width: 768px) {
+      .drag-indicator {
+        bottom: auto;
+        left: 0;
+        width: 10px;
+        height: 4px;
+      }
+    }
+
+    .content {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .event-box {
+      background: #ffffff;
+      margin-bottom: 20px;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+
+    .event-box:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .event-box h4 {
+      margin-top: 0;
+      color: var(--primary-color);
+    }
+
+    .event-box img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-top: 15px;
+      box-shadow: var(--shadow);
+    }
+
+    .event-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .event-theme {
+      background-color: var(--secondary-color);
+      color: white;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
+    .event-description {
+      margin: 10px 0;
+    }
+
+    .event-source {
+      font-size: 12px;
+      color: #666;
+      font-style: italic;
+    }
+
+    #filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    #filters button {
+      margin: 0;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 20px;
+      background-color: #ddd;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    #filters button:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+
+    #filters button.active {
+      background-color: var(--secondary-color);
+      color: white;
+      font-weight: bold;
+    }
+
+    .search-container {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    #searchInput {
+      flex-grow: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    #searchButton {
+      padding: 10px 20px;
+      background-color: var(--secondary-color);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    #searchButton:hover {
+      background-color: var(--primary-color);
+    }
+
+    .comparison-container {
+      display: none;
+      margin-top: 30px;
+      border-top: 2px solid var(--accent-color);
+      padding-top: 20px;
+    }
+
+    .comparison-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .comparison-region {
+      width: 48%;
+    }
+
+    .comparison-events {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 767px) {
+      nav {
+        display: none;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: var(--primary-color);
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: var(--shadow);
+        flex-direction: column;
+      }
+      
+      nav.open {
+        display: flex;
+      }
+      
+      nav button {
+        margin: 5px 0;
+      }
+      
+      .mobile-menu-btn {
+        display: block;
+      }
+    }
+
+    .accessibility-controls {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+    }
+
+    .accessibility-btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+
+    .accessibility-btn:hover {
+      transform: scale(1.1);
+    }
+
+    
+    /* Estilos para las tarjetas de civilizaciones */
+    .civilization-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .civilization-card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+
+    .civilization-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .civilization-card h3 {
+      color: var(--primary-color);
+      margin-top: 0;
+    }
+
+    /* Estilos para la línea del tiempo general */
+    .timeline-overview {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .period {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .period h3 {
+      color: var(--primary-color);
+      margin-top: 0;
+    }
+
+    /* Estilos para los eventos clave */
+    .key-events {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .event-card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .event-card h4 {
+      color: var(--primary-color);
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Historia del Mundo</h1>
+    <button class="mobile-menu-btn" onclick="toggleMenu()">☰</button>
+    <nav id="mainNav">
+      <button onclick="mostrarSeccion('historia')" id="btnHistoria" class="active">¿Qué es la Historia?</button>
+      <button onclick="mostrarSeccion('lineaTiempo')" id="btnLinea">Línea de Tiempo</button>
+      <button onclick="mostrarSeccion('comparaciones')" id="btnComparaciones">Comparaciones</button>
+    </nav>
+  </header>
+
+  <!-- Sección 1: Historia -->
+  <div id="historia" class="section active">
+    <h2>Historia</h2>
+    <p>La historia es la ciencia social que estudia, analiza e interpreta los acontecimientos del pasado humano. A través de fuentes como documentos, restos arqueológicos y testimonios, los historiadores reconstruyen los hechos que han modelado a las sociedades y sus culturas.</p>
+    <p>El propósito de la historia no es solo comprender lo que ocurrió, sino también explicar cómo y por qué sucedieron esos procesos, permitiendo reflexionar sobre el presente y proyectar el futuro. Estudiar la historia nos ayuda a entender las raíces de las civilizaciones, los conflictos, los avances y las transformaciones de la humanidad a lo largo del tiempo.</p>
+
+    <h2>Civilizaciones Antiguas</h2>
+    <div class="civilization-grid">
+      <div class="civilization-card">
+        <h3>Egipto</h3>
+        <p>Civilización que floreció a lo largo del río Nilo desde alrededor del 3100 a.C. hasta el 332 a.C. Conocida por sus impresionantes pirámides, faraones y avanzado sistema de escritura jeroglífica.</p>
+        <p><strong>Período:</strong> c. 3100 a.C. - 332 a.C.</p>
+        <p><strong>Logros:</strong> Pirámides, medicina avanzada, calendario solar</p>
+      </div>
+      <div class="civilization-card">
+        <h3>Mesopotamia</h3>
+        <p>Considerada la "cuna de la civilización", se desarrolló entre los ríos Tigris y Éufrates. Inventó la escritura cuneiforme y estableció las primeras ciudades-estado.</p>
+        <p><strong>Período:</strong> c. 3500 a.C. - 539 a.C.</p>
+        <p><strong>Logros:</strong> Escritura, código de Hammurabi, rueda</p>
+      </div>
+      <div class="civilization-card">
+        <h3>Grecia</h3>
+        <p>Cuna de la democracia, la filosofía y el arte clásico. Su influencia sentó las bases de la civilización occidental.</p>
+        <p><strong>Período:</strong> c. 800 a.C. - 146 a.C.</p>
+        <p><strong>Logros:</strong> Democracia, filosofía, teatro, Juegos Olímpicos</p>
+      </div>
+      <div class="civilization-card">
+        <h3>Roma</h3>
+        <p>Gran imperio que influenció el derecho, la arquitectura y la ingeniería. Su legado perdura en muchos aspectos de la cultura occidental.</p>
+        <p><strong>Período:</strong> 753 a.C. - 476 d.C.</p>
+        <p><strong>Logros:</strong> Derecho romano, arquitectura, sistema de caminos</p>
+      </div>
+      <div class="civilization-card">
+        <h3>China</h3>
+        <p>Civilización con dinastías milenarias que desarrollaron importantes inventos y sistemas filosóficos.</p>
+        <p><strong>Período:</strong> c. 1600 a.C. - presente</p>
+        <p><strong>Logros:</strong> Papel, pólvora, brújula, seda</p>
+      </div>
+      <div class="civilization-card">
+        <h3>India</h3>
+        <p>Cuna del hinduismo y budismo, con ciudades planificadas y avances en matemáticas y medicina.</p>
+        <p><strong>Período:</strong> c. 3300 a.C. - presente</p>
+        <p><strong>Logros:</strong> Cero decimal, ajedrez, yoga</p>
+      </div>
+    </div>
+
+    <h2>Linea del Tiempo Histórica</h2>
+    <div class="timeline-overview">
+      <div class="period">
+        <h3>Edad Antigua (3000 a.C. - 476 d.C.)</h3>
+        <ul>
+          <li>Desarrollo de las primeras civilizaciones</li>
+          <li>Invención de la escritura</li>
+          <li>Grandes imperios: Egipto, Persia, Grecia, Roma</li>
+        </ul>
+      </div>
+      <div class="period">
+        <h3>Edad Media (476 - 1453)</h3>
+        <ul>
+          <li>Caída del Imperio Romano de Occidente</li>
+          <li>Expansión del Islam</li>
+          <li>Feudalismo en Europa</li>
+          <li>Cruzadas</li>
+        </ul>
+      </div>
+      <div class="period">
+        <h3>Edad Moderna (1453 - 1789)</h3>
+        <ul>
+          <li>Renacimiento</li>
+          <li>Descubrimiento de América</li>
+          <li>Reforma Protestante</li>
+          <li>Revolución Científica</li>
+        </ul>
+      </div>
+      <div class="period">
+        <h3>Edad Contemporánea (1789 - presente)</h3>
+        <ul>
+          <li>Revolución Francesa e Industrial</li>
+          <li>Guerras Mundiales</li>
+          <li>Guerra Fría</li>
+          <li>Globalización</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>Hechos Relevantes</h2>
+    <div class="key-events">
+      <div class="event-card">
+        <h4>Caída del Imperio Romano (476)</h4>
+        <p>Marcó el fin de la Edad Antigua y el inicio de la Edad Media en Europa.</p>
+      </div>
+      <div class="event-card">
+        <h4>Revolución Francesa (1789)</h4>
+        <p>Punto de inflexión en la historia política de Europa, con ideales de libertad, igualdad y fraternidad.</p>
+      </div>
+      <div class="event-card">
+        <h4>Independencia de América Latina (1808-1825)</h4>
+        <p>Procesos que llevaron a la independencia de las colonias españolas en América.</p>
+      </div>
+      <div class="event-card">
+        <h4>Primera Guerra Mundial (1914-1918)</h4>
+        <p>Conflicto global que redefinió el mapa político de Europa.</p>
+      </div>
+      <div class="event-card">
+        <h4>Segunda Guerra Mundial (1939-1945)</h4>
+        <p>El conflicto más devastador de la historia, con el Holocausto y el uso de armas nucleares.</p>
+      </div>
+      <div class="event-card">
+        <h4>Llegada del hombre a la Luna (1969)</h4>
+        <p>Hito en la exploración espacial durante la carrera espacial entre EE.UU. y la URSS.</p>
+      </div>
+      <div class="event-card">
+        <h4>Caída del Muro de Berlín (1989)</h4>
+        <p>Símbolo del fin de la Guerra Fría y la reunificación de Alemania.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección 2: Línea de Tiempo -->
+  <div id="lineaTiempo" class="section">
+    <div class="timeline-container">
+      <div class="timeline-bar" id="timelineBar">
+        <div class="timeline-segment" data-label="Antigüedad (3000 a.C. - 476 d.C.)"></div>
+        <div class="timeline-segment" data-label="Edad Media (476 - 1453)"></div>
+        <div class="timeline-segment" data-label="Edad Moderna (1453 - 1789)"></div>
+        <div class="timeline-segment" data-label="Edad Contemp. (1789 - presente)"></div>
+        <div class="drag-indicator" id="dragIndicator"></div>
+      </div>
+      <div class="content">
+        <h2>Línea de Tiempo Interactiva</h2>
+        
+        <div class="search-container">
+          <input type="text" id="searchInput" placeholder="Buscar eventos por nombre, año o tema...">
+          <button id="searchButton" onclick="searchEvents()">Buscar</button>
+        </div>
+        
+        <div id="filters">
+          <button onclick="filterTheme('todos')" class="active">Todos</button>
+          <button onclick="filterTheme('guerras')">Guerras</button>
+          <button onclick="filterTheme('inventos')">Inventos</button>
+          <button onclick="filterTheme('culturas')">Culturas</button>
+          <button onclick="filterTheme('politica')">Política</button>
+          <button onclick="filterTheme('ciencia')">Ciencia</button>
+          <button onclick="filterTheme('arte')">Arte</button>
+        </div>
+        
+        <div id="eventContainer">
+          <p>Mueve el cursor sobre la línea de tiempo para explorar los eventos históricos.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sección 3: Comparaciones -->
+  <div id="comparaciones" class="section">
+    <div class="content">
+      <h2>Comparaciones Históricas</h2>
+      <p>Selecciona dos regiones y un período histórico para comparar eventos contemporáneos en diferentes partes del mundo.</p>
+      
+      <div class="comparison-controls">
+        <div>
+          <label for="region1">Región 1:</label>
+          <select id="region1">
+            <option value="europa">Europa</option>
+            <option value="asia">Asia</option>
+            <option value="africa">África</option>
+            <option value="america">América</option>
+            <option value="oceania">Oceanía</option>
+          </select>
+        </div>
+        
+        <div>
+          <label for="region2">Región 2:</label>
+          <select id="region2">
+            <option value="asia">Asia</option>
+            <option value="europa">Europa</option>
+            <option value="africa">África</option>
+            <option value="america">América</option>
+            <option value="oceania">Oceanía</option>
+          </select>
+        </div>
+        
+        <div>
+          <label for="period">Período:</label>
+          <select id="period">
+            <option value="antigua">Edad Antigua</option>
+            <option value="media">Edad Media</option>
+            <option value="moderna">Edad Moderna</option>
+            <option value="contemporanea">Edad Contemporánea</option>
+          </select>
+        </div>
+        
+        <button onclick="showComparison()">Comparar</button>
+      </div>
+      
+      <div class="comparison-container" id="comparisonResults">
+        <div class="comparison-header">
+          <h3 id="region1Title">Europa</h3>
+          <h3 id="region2Title">Asia</h3>
+        </div>
+        <div class="comparison-events">
+          <div class="comparison-region" id="region1Events"></div>
+          <div class="comparison-region" id="region2Events"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="accessibility-controls">
+    
+  </div>
+
+  <script>
+    // Variables globales
+    const etapas = [
+      { nombre: "Antigüedad", inicio: -3000, fin: 476, label: "Antigüedad (3000 a.C. - 476 d.C.)" },
+      { nombre: "Edad Media", inicio: 477, fin: 1453, label: "Edad Media (476 - 1453)" },
+      { nombre: "Edad Moderna", inicio: 1454, fin: 1789, label: "Edad Moderna (1453 - 1789)" },
+      { nombre: "Edad Contemporánea", inicio: 1790, fin: 2025, label: "Edad Contemp. (1789 - presente)" }
+    ];
+
+    const events = [
+      { 
+        year: -3000, 
+        title: "Nacimiento de la escritura en Mesopotamia", 
+        description: "Los sumerios desarrollan la escritura cuneiforme, marcando el inicio de la historia registrada.",
+        theme: "culturas", 
+        region: "asia",
+        img: "escritura.jpg",
+        source: "Kramer, S. N. (1963). The Sumerians: Their history, culture, and character."
+      },
+      { 
+        year: -776, 
+        title: "Primeros Juegos Olímpicos en Grecia", 
+        description: "Celebrados en Olimpia en honor a Zeus, marcaron el inicio de los Juegos Olímpicos antiguos.",
+        theme: "culturas", 
+        region: "europa",
+        img: "olimpicos.jpg",
+        source: "Spivey, N. (2004). The Ancient Olympics."
+      },
+      { 
+        year: 476, 
+        title: "Caída del Imperio Romano de Occidente", 
+        description: "El último emperador romano, Rómulo Augústulo, es depuesto por Odoacro, marcando el fin de la Edad Antigua.",
+        theme: "guerras", 
+        region: "europa",
+        img: "roma.jpg",
+        source: "Heather, P. (2005). The Fall of the Roman Empire."
+      },
+      { 
+        year: 622, 
+        title: "Hégira - Inicio del calendario islámico", 
+        description: "Mahoma emigra de La Meca a Medina, evento que marca el inicio del calendario islámico.",
+        theme: "culturas", 
+        region: "asia",
+        img: "hijra.jpg",
+        source: "Armstrong, K. (1991). Muhammad: A biography of the Prophet."
+      },
+      { 
+        year: 1096, 
+        title: "Primera Cruzada", 
+        description: "Expedición militar cristiana para recuperar Tierra Santa del control musulmán.",
+        theme: "guerras", 
+        region: "europa",
+        img: "cruzada.jpg",
+        source: "Asbridge, T. (2004). The First Crusade: A New History."
+      },
+      { 
+        year: 1453, 
+        title: "Caída de Constantinopla", 
+        description: "Los otomanos capturan Constantinopla, marcando el fin del Imperio Bizantino.",
+        theme: "guerras", 
+        region: "europa",
+        img: "constantinopla.jpg",
+        source: "Crowley, R. (2005). 1453: The Holy War for Constantinople."
+      },
+      { 
+        year: 1492, 
+        title: "Descubrimiento de América", 
+        description: "Cristóbal Colón llega a América bajo el patrocinio de los Reyes Católicos de España.",
+        theme: "culturas", 
+        region: "europa",
+        img: "colón.jpg",
+        source: "Bergreen, L. (2011). Columbus: The Four Voyages."
+      },
+      { 
+        year: 1789, 
+        title: "Revolución Francesa", 
+        description: "Movimiento político y social que acabó con el absolutismo en Francia y difundió ideales democráticos.",
+        theme: "politica", 
+        region: "europa",
+        img: "francia.jpg",
+        source: "Doyle, W. (2001). The French Revolution: A very short introduction."
+      },
+      { 
+        year: 1876, 
+        title: "Invención del teléfono", 
+        description: "Alexander Graham Bell patenta el teléfono, revolucionando las comunicaciones.",
+        theme: "inventos", 
+        region: "america",
+        img: "telefono.jpg",
+        source: "Bruce, R. V. (1973). Bell: Alexander Graham Bell and the conquest of solitude."
+      },
+      { 
+        year: 1914, 
+        title: "Inicio de la Primera Guerra Mundial", 
+        description: "Conflicto global desencadenado por el asesinato del archiduque Francisco Fernando.",
+        theme: "guerras", 
+        region: "europa",
+        img: "ww1.jpg",
+        source: "Keegan, J. (1998). The First World War."
+      },
+      { 
+        year: 1945, 
+        title: "Fin de la Segunda Guerra Mundial", 
+        description: "Conflicto más devastador de la historia, con el lanzamiento de bombas atómicas en Japón.",
+        theme: "guerras", 
+        region: "global",
+        img: "ww2.jpg",
+        source: "Beevor, A. (2012). The Second World War."
+      },
+      { 
+        year: 1969, 
+        title: "Llegada a la Luna", 
+        description: "Neil Armstrong y Buzz Aldrin caminan sobre la Luna durante la misión Apolo 11.",
+        theme: "ciencia", 
+        region: "america",
+        img: "luna.jpg",
+        source: "Chaikin, A. (1994). A Man on the Moon."
+      },
+      { 
+        year: 1989, 
+        title: "Caída del Muro de Berlín", 
+        description: "Evento simbólico del fin de la Guerra Fría y la reunificación de Alemania.",
+        theme: "politica", 
+        region: "europa",
+        img: "berlin.jpg",
+        source: "Sarotte, M. E. (2014). The Collapse: The Accidental Opening of the Berlin Wall."
+      },
+      { 
+        year: 2001, 
+        title: "Ataques del 11 de septiembre", 
+        description: "Atentados terroristas contra Estados Unidos que cambiaron la política global.",
+        theme: "guerras", 
+        region: "america",
+        img: "911.jpg",
+        source: "The 9/11 Commission Report (2004)."
+      },
+      { 
+        year: 2020, 
+        title: "Pandemia del COVID-19", 
+        description: "Pandemia global causada por el coronavirus SARS-CoV-2 que impactó la salud y economía mundial.",
+        theme: "culturas", 
+        region: "global",
+        img: "covid.jpg",
+        source: "WHO reports on COVID-19 pandemic."
+      }
+    ];
+
+    let currentTheme = "todos";
+    let currentPeriod = etapas[0]; // Establecer el primer período por defecto
+    let isDragging = false;
+
+    // Funciones principales
+    function mostrarSeccion(id) {
+      document.querySelectorAll('.section').forEach(sec => {
+        sec.classList.remove('active');
+      });
+      document.getElementById(id).classList.add('active');
+
+      document.querySelectorAll('nav button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      if (id === 'historia') {
+        document.getElementById('btnHistoria').classList.add('active');
+      } else if (id === 'lineaTiempo') {
+        document.getElementById('btnLinea').classList.add('active');
+        // Mostrar eventos del período actual al cambiar a esta sección
+        mostrarEventos(currentPeriod);
+      } else if (id === 'comparaciones') {
+        document.getElementById('btnComparaciones').classList.add('active');
+      }
+    }
+
+    function toggleMenu() {
+      const nav = document.getElementById('mainNav');
+      nav.classList.toggle('open');
+    }
+
+    // Funciones de la línea de tiempo
+    const timelineBar = document.getElementById("timelineBar");
+    const dragIndicator = document.getElementById("dragIndicator");
+    const eventContainer = document.getElementById("eventContainer");
+
+    // Inicializar la línea de tiempo
+    function initTimeline() {
+      // Posicionar el indicador al inicio
+      updateIndicatorPosition(0);
+      
+      // Mostrar eventos del primer período
+      mostrarEventos(currentPeriod);
+      
+      // Configurar eventos
+      setupTimelineEvents();
+    }
+
+    function setupTimelineEvents() {
+      // Eventos para desktop (ratón)
+      timelineBar.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        handleTimelineMove(e);
+        document.addEventListener("mousemove", handleTimelineMove);
+        document.addEventListener("mouseup", () => {
+          isDragging = false;
+          document.removeEventListener("mousemove", handleTimelineMove);
+        });
+      });
+
+      // Eventos para móvil (touch)
+      timelineBar.addEventListener("touchstart", (e) => {
+        isDragging = true;
+        handleTimelineMove(e.touches[0]);
+        document.addEventListener("touchmove", (e) => {
+          handleTimelineMove(e.touches[0]);
+        });
+        document.addEventListener("touchend", () => {
+          isDragging = false;
+          document.removeEventListener("touchmove", handleTimelineMove);
+        });
+      });
+
+      // Evento hover para desktop
+      timelineBar.addEventListener("mousemove", (e) => {
+        if (!isDragging) {
+          handleTimelineMove(e);
+        }
+      });
+
+      // Evento para cuando el ratón sale de la línea de tiempo
+      timelineBar.addEventListener("mouseleave", () => {
+        if (!isDragging) {
+          // No hacer nada o puedes decidir mantener el último período seleccionado
+        }
+      });
+    }
+
+    function handleTimelineMove(e) {
+      const rect = timelineBar.getBoundingClientRect();
+      let percent;
+      
+      if (window.innerWidth >= 768) {
+        // Versión desktop - movimiento vertical
+        const y = e.clientY - rect.top;
+        percent = Math.max(0, Math.min(1, y / rect.height));
+        updateIndicatorPosition(percent * 100);
+      } else {
+        // Versión móvil - movimiento horizontal
+        const x = e.clientX - rect.left;
+        percent = Math.max(0, Math.min(1, x / rect.width));
+        updateIndicatorPosition(percent * 100);
+      }
+
+      const etapaIndex = Math.floor(percent * etapas.length);
+      const etapa = etapas[etapaIndex];
+      
+      if (etapa && (!currentPeriod || currentPeriod.nombre !== etapa.nombre)) {
+        currentPeriod = etapa;
+        mostrarEventos(etapa);
+      }
+    }
+
+    function updateIndicatorPosition(positionPercent) {
+      if (window.innerWidth >= 768) {
+        // Versión desktop - posición vertical
+        dragIndicator.style.top = `${positionPercent}%`;
+        dragIndicator.style.left = '0';
+      } else {
+        // Versión móvil - posición horizontal
+        dragIndicator.style.left = `${positionPercent}%`;
+        dragIndicator.style.top = 'auto';
+        dragIndicator.style.bottom = '0';
+      }
+    }
+
+    function mostrarEventos(etapa) {
+      if (!etapa) {
+        console.error("No se proporcionó una etapa válida");
+        return;
+      }
+
+      const filtered = currentTheme === "todos"
+        ? events
+        : events.filter(ev => ev.theme === currentTheme);
+      
+      const dentroEtapa = filtered.filter(ev => ev.year >= etapa.inicio && ev.year <= etapa.fin);
+
+      if (dentroEtapa.length === 0) {
+        eventContainer.innerHTML = `<p>No hay eventos para <strong>${etapa.label}</strong> con este filtro.</p>`;
+        return;
+      }
+
+      eventContainer.innerHTML = `<h3>${etapa.label}</h3>`;
+      dentroEtapa.sort((a, b) => a.year - b.year).forEach(ev => {
+        eventContainer.innerHTML += `
+          <div class="event-box" data-theme="${ev.theme}" data-year="${ev.year}">
+            <div class="event-meta">
+              <span class="event-year">${ev.year < 0 ? Math.abs(ev.year) + " a.C." : ev.year + " d.C."}</span>
+              <span class="event-theme">${getThemeName(ev.theme)}</span>
+            </div>
+            <h4>${ev.title}</h4>
+            <div class="event-description">${ev.description}</div>
+            ${ev.img ? `<img src="${ev.img}" alt="${ev.title}" loading="lazy">` : ''}
+            ${ev.source ? `<div class="event-source">Fuente: ${ev.source}</div>` : ''}
+          </div>
+        `;
+      });
+    }
+
+    function getThemeName(theme) {
+      const themes = {
+        "guerras": "Guerras",
+        "inventos": "Inventos",
+        "culturas": "Culturas",
+        "politica": "Política",
+        "ciencia": "Ciencia",
+        "arte": "Arte"
+      };
+      return themes[theme] || theme;
+    }
+
+    function filterTheme(theme) {
+      currentTheme = theme;
+      document.querySelectorAll("#filters button").forEach(btn => {
+        btn.classList.remove("active");
+      });
+      document.querySelector(`#filters button[onclick*="${theme}"]`).classList.add("active");
+      
+      // Asegurarse de que hay un período seleccionado
+      if (!currentPeriod) {
+        currentPeriod = etapas[0];
+      }
+      
+      mostrarEventos(currentPeriod);
+    }
+
+    // Funciones de búsqueda
+    function searchEvents() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      
+      if (!searchTerm) {
+        if (currentPeriod) {
+          mostrarEventos(currentPeriod);
+        } else {
+          eventContainer.innerHTML = '<p>Mueve el cursor sobre la línea de tiempo para explorar los eventos históricos.</p>';
+        }
+        return;
+      }
+      
+      const filtered = events.filter(ev => 
+        ev.title.toLowerCase().includes(searchTerm) || 
+        (ev.year.toString().includes(searchTerm)) ||
+        ev.theme.includes(searchTerm) ||
+        (ev.description && ev.description.toLowerCase().includes(searchTerm))
+      );
+      
+      if (filtered.length === 0) {
+        eventContainer.innerHTML = `<p>No se encontraron eventos para "${searchTerm}".</p>`;
+        return;
+      }
+      
+      eventContainer.innerHTML = `<h3>Resultados para "${searchTerm}"</h3>`;
+      filtered.sort((a, b) => a.year - b.year).forEach(ev => {
+        const periodo = getPeriodForYear(ev.year);
+        eventContainer.innerHTML += `
+          <div class="event-box">
+            <div class="event-meta">
+              <span class="event-year">${ev.year < 0 ? Math.abs(ev.year) + " a.C." : ev.year + " d.C."} (${periodo})</span>
+              <span class="event-theme">${getThemeName(ev.theme)}</span>
+            </div>
+            <h4>${ev.title}</h4>
+            <div class="event-description">${ev.description}</div>
+            ${ev.img ? `<img src="${ev.img}" alt="${ev.title}" loading="lazy">` : ''}
+            ${ev.source ? `<div class="event-source">Fuente: ${ev.source}</div>` : ''}
+          </div>
+        `;
+      });
+    }
+
+    function getPeriodForYear(year) {
+      for (const periodo of etapas) {
+        if (year >= periodo.inicio && year <= periodo.fin) {
+          return periodo.nombre;
+        }
+      }
+      return "Desconocido";
+    }
+
+    // Funciones de comparación
+    function showComparison() {
+      const region1 = document.getElementById('region1').value;
+      const region2 = document.getElementById('region2').value;
+      const period = document.getElementById('period').value;
+      
+      const periodData = {
+        'antigua': { inicio: -3000, fin: 476 },
+        'media': { inicio: 477, fin: 1453 },
+        'moderna': { inicio: 1454, fin: 1789 },
+        'contemporanea': { inicio: 1790, fin: 2025 }
+      };
+      
+      const region1Events = events.filter(ev => 
+        ev.region === region1 && 
+        ev.year >= periodData[period].inicio && 
+        ev.year <= periodData[period].fin
+      ).sort((a, b) => a.year - b.year);
+      
+      const region2Events = events.filter(ev => 
+        ev.region === region2 && 
+        ev.year >= periodData[period].inicio && 
+        ev.year <= periodData[period].fin
+      ).sort((a, b) => a.year - b.year);
+      
+      document.getElementById('region1Title').textContent = getRegionName(region1);
+      document.getElementById('region2Title').textContent = getRegionName(region2);
+      
+      let region1Html = `<h4>Eventos en ${getRegionName(region1)}</h4>`;
+      if (region1Events.length === 0) {
+        region1Html += `<p>No hay eventos registrados para este período.</p>`;
+      } else {
+        region1Events.forEach(ev => {
+          region1Html += `
+            <div class="event-box">
+              <h5>${ev.title} (${ev.year < 0 ? Math.abs(ev.year) + " a.C." : ev.year + " d.C."})</h5>
+              <p>${ev.description}</p>
+            </div>
+          `;
+        });
+      }
+      
+      let region2Html = `<h4>Eventos en ${getRegionName(region2)}</h4>`;
+      if (region2Events.length === 0) {
+        region2Html += `<p>No hay eventos registrados para este período.</p>`;
+      } else {
+        region2Events.forEach(ev => {
+          region2Html += `
+            <div class="event-box">
+              <h5>${ev.title} (${ev.year < 0 ? Math.abs(ev.year) + " a.C." : ev.year + " d.C."})</h5>
+              <p>${ev.description}</p>
+            </div>
+          `;
+        });
+      }
+      
+      document.getElementById('region1Events').innerHTML = region1Html;
+      document.getElementById('region2Events').innerHTML = region2Html;
+      document.getElementById('comparisonResults').style.display = 'block';
+    }
+
+    function getRegionName(region) {
+      const regions = {
+        'europa': 'Europa',
+        'asia': 'Asia',
+        'africa': 'África',
+        'america': 'América',
+        'oceania': 'Oceanía',
+        'global': 'Global'
+      };
+      return regions[region] || region;
+    }
+
+  
+    
+
+
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', function() {
+      // Permitir búsqueda al presionar Enter
+      document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          searchEvents();
+        }
+      });
+      
+      // Inicializar la línea de tiempo
+      initTimeline();
+      
+      // Mostrar la sección correspondiente si hay hash en la URL
+      if (window.location.hash === '#lineaTiempo') {
+        mostrarSeccion('lineaTiempo');
+      } else if (window.location.hash === '#comparaciones') {
+        mostrarSeccion('comparaciones');
+      }
+    });
+  </script>
+</body>
+</html>
